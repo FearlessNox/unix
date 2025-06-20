@@ -1,10 +1,10 @@
-
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card } from './ui/card';
 import { X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface RegisterModalProps {
   onClose: () => void;
@@ -62,11 +62,35 @@ export const RegisterModal = ({ onClose, onRegister, onSwitchToLogin }: Register
     if (!validateForm()) return;
 
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      onRegister(formData);
+
+    try {
+      const response = await fetch('/api/createUser', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          nickname: formData.username,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Falha ao criar conta.');
+      }
+
+      toast.success('Conta criada com sucesso!');
+      onRegister(result.user);
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message || 'Ocorreu um erro. Tente novamente.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleChange = (field: string, value: string) => {
