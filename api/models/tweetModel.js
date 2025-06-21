@@ -12,4 +12,12 @@ export async function getAllTweets() {
     .from('tweets')
     .select('*, users(id, name, nickname)')
     .order('created_at', { ascending: false });
+}
+
+export async function getTweetById(id) {
+  return await supabase
+    .from('tweets')
+    .select('*, users(id, name, nickname)')
+    .eq('id', id)
+    .single();
 } 

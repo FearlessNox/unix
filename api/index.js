@@ -1,4 +1,4 @@
-import { getAllTweets, insertTweet } from './models/tweetModel.js';
+import { getAllTweets, insertTweet, getTweetById } from './models/tweetModel.js';
 import { findUserByEmail, insertUser, findUserByNicknameOrEmail } from './models/userModel.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -49,6 +49,8 @@ export default async function handler(req, res) {
         return await handleLogin(req, res);
 
       // Tweet routes
+      case 'getTweet':
+        return await handleGetTweet(req, res);
       case 'createTweet':
         return await handleCreateTweet(req, res);
       case 'getTweets':
@@ -59,7 +61,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ 
           error: 'Rota não encontrada',
           path: path,
-          availableRoutes: ['test', 'createUser', 'login', 'createTweet', 'getTweets']
+          availableRoutes: ['test', 'createUser', 'login', 'getTweet', 'createTweet', 'getTweets']
         });
     }
   } catch (error) {
@@ -197,6 +199,38 @@ async function handleLogin(req, res) {
 }
 
 // Tweet handlers
+async function handleGetTweet(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  try {
+    const { id } = req.query;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'ID do tweet é obrigatório' });
+    }
+
+    console.log('DEBUG: getTweet function called for ID:', id);
+    
+    const { data, error } = await getTweetById(id);
+    
+    console.log('DEBUG: Resposta do Supabase:', { data, error });
+    
+    if (error) {
+      console.error('ERRO do Supabase:', error);
+      return res.status(404).json({ error: 'Tweet não encontrado' });
+    }
+
+    console.log('DEBUG: Tweet encontrado com sucesso');
+    return res.status(200).json({ tweet: data });
+  } catch (error) {
+    console.error('ERRO CRÍTICO em getTweet:', error);
+    console.error('Stack trace:', error.stack);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}
+
 async function handleCreateTweet(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método não permitido' });

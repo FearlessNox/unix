@@ -1,6 +1,7 @@
 import { Card } from './ui/card';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 
 interface Post {
   id: number;
@@ -17,8 +18,14 @@ interface FeedProps {
 }
 
 export const Feed = ({ posts, isLoading = false }: FeedProps) => {
+  const navigate = useNavigate();
+
   const formatTimeAgo = (timestamp: Date) => {
     return formatDistanceToNow(timestamp, { addSuffix: true, locale: ptBR });
+  };
+
+  const handleTweetClick = (postId: number) => {
+    navigate(`/tweet/${postId}`);
   };
 
   return (
@@ -39,7 +46,11 @@ export const Feed = ({ posts, isLoading = false }: FeedProps) => {
         </Card>
       ) : (
         posts.map((post) => (
-          <Card key={post.id} className="p-6 bg-white/60 backdrop-blur-sm border-slate-200 shadow-sm hover:shadow-md transition-all duration-200">
+          <Card 
+            key={post.id} 
+            className="p-6 bg-white/60 backdrop-blur-sm border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer"
+            onClick={() => handleTweetClick(post.id)}
+          >
             <div className="flex space-x-4">
               <div className="flex-shrink-0">
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-green-400 rounded-full flex items-center justify-center">
@@ -64,17 +75,35 @@ export const Feed = ({ posts, isLoading = false }: FeedProps) => {
                 </p>
                 
                 <div className="flex items-center space-x-6 mt-4 text-slate-500">
-                  <button className="flex items-center space-x-2 hover:text-blue-600 transition-colors duration-200">
+                  <button 
+                    className="flex items-center space-x-2 hover:text-blue-600 transition-colors duration-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // TODO: Implementar resposta
+                    }}
+                  >
                     <span className="text-lg">💬</span>
                     <span className="text-sm">Responder</span>
                   </button>
                   
-                  <button className="flex items-center space-x-2 hover:text-green-600 transition-colors duration-200">
+                  <button 
+                    className="flex items-center space-x-2 hover:text-green-600 transition-colors duration-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // TODO: Implementar compartilhamento
+                    }}
+                  >
                     <span className="text-lg">🔄</span>
                     <span className="text-sm">Compartilhar</span>
                   </button>
                   
-                  <button className="flex items-center space-x-2 hover:text-red-500 transition-colors duration-200">
+                  <button 
+                    className="flex items-center space-x-2 hover:text-red-500 transition-colors duration-200"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // TODO: Implementar curtir
+                    }}
+                  >
                     <span className="text-lg">❤️</span>
                     <span className="text-sm">Curtir</span>
                   </button>
