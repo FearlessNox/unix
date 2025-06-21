@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
-import { Card, CardContent } from './components/ui/card';
-import { Button } from './components/ui/button';
-import { Avatar, AvatarFallback } from './components/ui/avatar';
+import { Card, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { toast } from 'sonner';
 
 interface Tweet {
