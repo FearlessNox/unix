@@ -43,44 +43,13 @@ export default async function handler(req, res) {
             hasJwtSecret: !!process.env.JWT_SECRET
           }
         });
-
-      // User routes
-      case 'createUser':
-        return await handleCreateUser(req, res);
-      case 'getUsers':
-        return await handleGetUsers(req, res);
-      case 'login':
-        return await handleLogin(req, res);
-      
-      // Tweet routes
-      case 'createTweet':
-        return await handleCreateTweet(req, res);
-      case 'getTweets':
-        return await handleGetTweets(req, res);
-      
-      // Comment routes
-      case 'createComment':
-        return await handleCreateComment(req, res);
-      case 'getComments':
-        return await handleGetComments(req, res);
-      
-      // Like routes
-      case 'likeTweet':
-        return await handleLikeTweet(req, res);
-      case 'unlikeTweet':
-        return await handleUnlikeTweet(req, res);
       
       default:
         console.log('DEBUG: Rota não encontrada:', path);
         return res.status(404).json({ 
           error: 'Rota não encontrada',
           path: path,
-          availableRoutes: [
-            'test', 'createUser', 'getUsers', 'login',
-            'createTweet', 'getTweets',
-            'createComment', 'getComments',
-            'likeTweet', 'unlikeTweet'
-          ]
+          availableRoutes: ['test']
         });
     }
   } catch (error) {
