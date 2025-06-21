@@ -45,7 +45,9 @@ const Index = () => {
           displayName: tweet.users.name,
           content: tweet.content,
           timestamp: parseDate(tweet.created_at),
-          avatar: '👤'
+          avatar: '👤',
+          comments: tweet.comments?.[0]?.count ?? 0,
+          likes: 0 // Por enquanto, likes ainda não implementados
         }));
         setPosts(formattedPosts);
       } else {

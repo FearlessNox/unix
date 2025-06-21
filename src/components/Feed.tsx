@@ -2,7 +2,7 @@ import { Card } from './ui/card';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Heart } from 'lucide-react';
 
 interface Post {
   id: number;
@@ -11,6 +11,8 @@ interface Post {
   content: string;
   timestamp: Date;
   avatar: string;
+  comments?: number;
+  likes?: number;
 }
 
 interface FeedProps {
@@ -76,42 +78,14 @@ export const Feed = ({ posts, isLoading = false }: FeedProps) => {
                 </p>
                 
                 <div className="flex items-center space-x-6 mt-4 text-slate-500">
-                  <button 
-                    className="flex items-center space-x-2 hover:text-blue-600 transition-colors duration-200"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // TODO: Implementar resposta
-                    }}
-                  >
-                    <span className="text-lg">💬</span>
-                    <span className="text-sm">Responder</span>
-                  </button>
-                  
-                  <button 
-                    className="flex items-center space-x-2 hover:text-green-600 transition-colors duration-200"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // TODO: Implementar compartilhamento
-                    }}
-                  >
-                    <span className="text-lg">🔄</span>
-                    <span className="text-sm">Compartilhar</span>
-                  </button>
-                  
-                  <button 
-                    className="flex items-center space-x-2 hover:text-red-500 transition-colors duration-200"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // TODO: Implementar curtir
-                    }}
-                  >
-                    <span className="text-lg">❤️</span>
-                    <span className="text-sm">Curtir</span>
-                  </button>
-
                   <button className="flex items-center gap-2 text-slate-500 hover:text-blue-500 transition-colors">
                     <MessageCircle size={18} />
-                    <span className="text-sm">{post.comments?.[0]?.count ?? 0}</span>
+                    <span className="text-sm">{post.comments ?? 0}</span>
+                  </button>
+
+                  <button className="flex items-center gap-2 text-slate-500 hover:text-red-500 transition-colors">
+                    <Heart size={18} />
+                    <span className="text-sm">{post.likes ?? 0}</span>
                   </button>
                 </div>
               </div>
