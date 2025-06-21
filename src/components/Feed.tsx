@@ -2,6 +2,7 @@ import { Card } from './ui/card';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
+import { MessageCircle } from 'lucide-react';
 
 interface Post {
   id: number;
@@ -106,6 +107,11 @@ export const Feed = ({ posts, isLoading = false }: FeedProps) => {
                   >
                     <span className="text-lg">❤️</span>
                     <span className="text-sm">Curtir</span>
+                  </button>
+
+                  <button className="flex items-center gap-2 text-slate-500 hover:text-blue-500 transition-colors">
+                    <MessageCircle size={18} />
+                    <span className="text-sm">{post.comments?.[0]?.count ?? 0}</span>
                   </button>
                 </div>
               </div>

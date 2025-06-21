@@ -21,8 +21,9 @@ interface CommentListProps {
 
 export const CommentList = ({ comments, isLoading = false }: CommentListProps) => {
   const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    return formatDistanceToNow(date, { addSuffix: true, locale: ptBR });
+    const utcDate = new Date(dateString);
+    const localDate = new Date(utcDate.getTime() + (utcDate.getTimezoneOffset() * 60000 * -1));
+    return formatDistanceToNow(localDate, { addSuffix: true, locale: ptBR });
   };
 
   if (isLoading) {
