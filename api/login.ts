@@ -1,3 +1,3 @@
-import { loginController } from '../controllers/userController.js';
+import { loginController } from './controllers/userController.js';
 
 export default loginController; 

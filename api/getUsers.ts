@@ -1,2 +1,2 @@
-import { getUsersController } from '../controllers/userController.js';
+import { getUsersController } from './controllers/userController.js';
 export default getUsersController; 

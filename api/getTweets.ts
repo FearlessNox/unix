@@ -1,4 +1,4 @@
-import { getTweetsController } from '../controllers/tweetController.js';
+import { getTweetsController } from './controllers/tweetController.js';
 
 export default async function handler(req, res) {
   try {

@@ -7,5 +7,5 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true
   },
-  "include": ["api", "controllers", "models", "lib", "middleware"]
+  "include": ["api"]
 } 
