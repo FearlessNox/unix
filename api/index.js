@@ -1,3 +1,5 @@
+import { getAllTweets } from './models/tweetModel.js';
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -36,13 +38,17 @@ export default async function handler(req, res) {
             hasJwtSecret: !!process.env.JWT_SECRET
           }
         });
+
+      // Tweet routes
+      case 'getTweets':
+        return await handleGetTweets(req, res);
       
       default:
         console.log('DEBUG: Rota não encontrada:', path);
         return res.status(404).json({ 
           error: 'Rota não encontrada',
           path: path,
-          availableRoutes: ['test']
+          availableRoutes: ['test', 'getTweets']
         });
     }
   } catch (error) {
@@ -52,5 +58,32 @@ export default async function handler(req, res) {
       error: 'Erro interno do servidor',
       message: error.message
     });
+  }
+}
+
+// Tweet handlers
+async function handleGetTweets(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  try {
+    console.log('DEBUG: getTweets function called');
+    
+    const { data, error } = await getAllTweets();
+    
+    console.log('DEBUG: Resposta do Supabase:', { data: data?.length, error });
+    
+    if (error) {
+      console.error('ERRO do Supabase:', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.log('DEBUG: Retornando dados com sucesso');
+    return res.status(200).json({ tweets: data });
+  } catch (error) {
+    console.error('ERRO CRÍTICO em getTweets:', error);
+    console.error('Stack trace:', error.stack);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 } 
