@@ -4,38 +4,59 @@ import { PostCreator } from '../components/PostCreator';
 import { Feed } from '../components/Feed';
 import { LoginModal } from '../components/LoginModal';
 import { RegisterModal } from '../components/RegisterModal';
+import { toast } from 'sonner';
 
 const Index = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      username: 'unix_creator',
-      displayName: 'Unix Creator',
-      content: 'Bem-vindos ao Unix! Uma nova forma de compartilhar ideias em pequenas doses. 🚀',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      avatar: '🖥️'
-    },
-    {
-      id: 2,
-      username: 'dev_ninja',
-      displayName: 'Dev Ninja',
-      content: 'Testando o Unix! Adorando a interface limpa e minimalista. Parabéns à equipe! 👨‍💻',
-      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000),
-      avatar: '🥷'
-    },
-    {
-      id: 3,
-      username: 'tech_enthusiast',
-      displayName: 'Tech Enthusiast',
-      content: 'O Unix está revolucionando o microblogging! Simplicidade e funcionalidade em perfeita harmonia. #Unix #Tech',
-      timestamp: new Date(Date.now() - 30 * 60 * 1000),
-      avatar: '⚡'
+  const [posts, setPosts] = useState([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+
+  // Função para parsear datas corretamente
+  const parseDate = (dateString: string) => {
+    // Se a data já tem 'Z' (UTC), usar diretamente
+    if (dateString.includes('Z')) {
+      return new Date(dateString);
     }
-  ]);
+    
+    // Se não tem timezone, assumir que é UTC e adicionar 'Z'
+    if (dateString.includes('T') && !dateString.includes('Z') && !dateString.includes('+')) {
+      return new Date(dateString + 'Z');
+    }
+    
+    // Caso padrão
+    return new Date(dateString);
+  };
+
+  // Função para carregar tweets da API
+  const loadTweets = async () => {
+    try {
+      setIsLoadingPosts(true);
+      const response = await fetch('/api/getTweets');
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Transformar os dados da API para o formato esperado pelo Feed
+        const formattedPosts = data.tweets.map(tweet => ({
+          id: tweet.id,
+          username: tweet.users.nickname,
+          displayName: tweet.users.name,
+          content: tweet.content,
+          timestamp: parseDate(tweet.created_at),
+          avatar: '👤'
+        }));
+        setPosts(formattedPosts);
+      } else {
+        console.error('Erro ao carregar tweets:', data.error);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar tweets:', error);
+    } finally {
+      setIsLoadingPosts(false);
+    }
+  };
 
   // Verificar se há sessão salva no localStorage
   useEffect(() => {
@@ -58,6 +79,11 @@ const Index = () => {
         localStorage.removeItem('userData');
       }
     }
+  }, []);
+
+  // Carregar tweets quando o componente montar
+  useEffect(() => {
+    loadTweets();
   }, []);
 
   const handleLogin = (data) => {
@@ -92,19 +118,42 @@ const Index = () => {
     localStorage.removeItem('userData');
   };
 
-  const handleCreatePost = (content) => {
+  const handleCreatePost = async (content) => {
     if (!isLoggedIn || !currentUser) return;
 
-    const newPost = {
-      id: Date.now(),
-      username: currentUser.username,
-      displayName: currentUser.displayName,
-      content: content,
-      timestamp: new Date(),
-      avatar: currentUser.avatar
-    };
+    try {
+      // Buscar o token do localStorage
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.error('Token de autenticação não encontrado');
+        return;
+      }
+      
+      const response = await fetch('/api/createTweet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          content: content
+        }),
+      });
 
-    setPosts([newPost, ...posts]);
+      const data = await response.json();
+
+      if (response.ok) {
+        // Recarregar os tweets para mostrar o novo
+        await loadTweets();
+        toast.success('Post criado com sucesso!');
+      } else {
+        console.error('Erro ao criar tweet:', data.error);
+        toast.error(data.error || 'Erro ao criar post');
+      }
+    } catch (error) {
+      console.error('Erro ao criar tweet:', error);
+      toast.error('Erro ao criar post. Tente novamente.');
+    }
   };
 
   return (
@@ -125,7 +174,7 @@ const Index = () => {
           />
         )}
         
-        <Feed posts={posts} />
+        <Feed posts={posts} isLoading={isLoadingPosts} />
       </main>
 
       {showLogin && (

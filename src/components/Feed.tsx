@@ -1,4 +1,3 @@
-
 import { Card } from './ui/card';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -14,9 +13,10 @@ interface Post {
 
 interface FeedProps {
   posts: Post[];
+  isLoading?: boolean;
 }
 
-export const Feed = ({ posts }: FeedProps) => {
+export const Feed = ({ posts, isLoading = false }: FeedProps) => {
   const formatTimeAgo = (timestamp: Date) => {
     return formatDistanceToNow(timestamp, { addSuffix: true, locale: ptBR });
   };
@@ -25,7 +25,13 @@ export const Feed = ({ posts }: FeedProps) => {
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-slate-800 mb-4">Feed Principal</h2>
       
-      {posts.length === 0 ? (
+      {isLoading ? (
+        <Card className="p-8 text-center bg-white/60 backdrop-blur-sm">
+          <div className="text-4xl mb-4">⏳</div>
+          <h3 className="text-lg font-medium text-slate-600 mb-2">Carregando posts...</h3>
+          <p className="text-slate-500">Buscando as últimas atualizações</p>
+        </Card>
+      ) : posts.length === 0 ? (
         <Card className="p-8 text-center bg-white/60 backdrop-blur-sm">
           <div className="text-4xl mb-4">📝</div>
           <h3 className="text-lg font-medium text-slate-600 mb-2">Nenhum post ainda</h3>
