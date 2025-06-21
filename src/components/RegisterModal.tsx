@@ -84,7 +84,7 @@ export const RegisterModal = ({ onClose, onRegister, onSwitchToLogin }: Register
       }
 
       toast.success('Conta criada com sucesso!');
-      onRegister(result.user);
+      onRegister(result);
       onClose();
     } catch (error: any) {
       toast.error(error.message || 'Ocorreu um erro. Tente novamente.');
