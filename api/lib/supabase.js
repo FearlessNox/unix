@@ -14,4 +14,4 @@ if (!supabaseUrl || !supabaseKey) {
   console.error('SUPABASE_SERVICE_ROLE_KEY:', supabaseKey ? '***' : 'NÃO DEFINIDA');
 }
 
-export const supabase = createClient(supabaseUrl!, supabaseKey!); 
+export const supabase = createClient(supabaseUrl, supabaseKey); 
