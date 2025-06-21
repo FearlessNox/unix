@@ -1,5 +1,7 @@
 import { getAllTweets, insertTweet, getTweetById } from './models/tweetModel.js';
 import { findUserByEmail, insertUser, findUserByNicknameOrEmail } from './models/userModel.js';
+import { insertComment, getCommentsByTweet } from './models/commentModel.js';
+import { insertLike, deleteLike, checkUserLiked, getLikeCountByTweet } from './models/likeModel.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
@@ -55,13 +57,27 @@ export default async function handler(req, res) {
         return await handleCreateTweet(req, res);
       case 'getTweets':
         return await handleGetTweets(req, res);
+
+      // Comment routes
+      case 'createComment':
+        return await handleCreateComment(req, res);
+      case 'getComments':
+        return await handleGetComments(req, res);
+
+      // Like routes
+      case 'likeTweet':
+        return await handleLikeTweet(req, res);
+      case 'unlikeTweet':
+        return await handleUnlikeTweet(req, res);
+      case 'checkLike':
+        return await handleCheckLike(req, res);
       
       default:
         console.log('DEBUG: Rota não encontrada:', path);
         return res.status(404).json({ 
           error: 'Rota não encontrada',
           path: path,
-          availableRoutes: ['test', 'createUser', 'login', 'getTweet', 'createTweet', 'getTweets']
+          availableRoutes: ['test', 'createUser', 'login', 'getTweet', 'createTweet', 'getTweets', 'createComment', 'getComments', 'likeTweet', 'unlikeTweet', 'checkLike']
         });
     }
   } catch (error) {
@@ -301,6 +317,251 @@ async function handleGetTweets(req, res) {
     return res.status(200).json({ tweets: data });
   } catch (error) {
     console.error('ERRO CRÍTICO em getTweets:', error);
+    console.error('Stack trace:', error.stack);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}
+
+// Comment handlers
+async function handleCreateComment(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  try {
+    // Verificar autenticação
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token de autenticação não fornecido' });
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      console.error('Erro: JWT_SECRET não definido nas variáveis de ambiente.');
+      return res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+
+    // Verificar e decodificar o token
+    const decoded = jwt.verify(token, jwtSecret);
+    const user_id = decoded.id;
+
+    const { content, tweet_id } = req.body || {};
+
+    if (!content || !tweet_id) {
+      return res.status(400).json({ error: 'Conteúdo e tweet_id são obrigatórios' });
+    }
+
+    console.log('DEBUG: Criando comentário para tweet:', tweet_id, 'usuário:', user_id);
+
+    const { data, error } = await insertComment({ content, user_id, tweet_id });
+
+    if (error) {
+      console.error('Erro ao inserir comentário:', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.log('DEBUG: Comentário criado com sucesso');
+    return res.status(201).json({ comment: data[0] });
+  } catch (error) {
+    console.error('ERRO CRÍTICO em createComment:', error);
+    console.error('Stack trace:', error.stack);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}
+
+async function handleGetComments(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  try {
+    const { tweet_id } = req.query;
+    
+    if (!tweet_id) {
+      return res.status(400).json({ error: 'tweet_id é obrigatório' });
+    }
+
+    console.log('DEBUG: getComments function called for tweet:', tweet_id);
+    
+    const { data, error } = await getCommentsByTweet(tweet_id);
+    
+    console.log('DEBUG: Resposta do Supabase:', { data: data?.length, error });
+    
+    if (error) {
+      console.error('ERRO do Supabase:', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.log('DEBUG: Comentários encontrados com sucesso');
+    return res.status(200).json({ comments: data });
+  } catch (error) {
+    console.error('ERRO CRÍTICO em getComments:', error);
+    console.error('Stack trace:', error.stack);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}
+
+// Like handlers
+async function handleLikeTweet(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  try {
+    // Verificar autenticação
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token de autenticação não fornecido' });
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      console.error('Erro: JWT_SECRET não definido nas variáveis de ambiente.');
+      return res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+
+    // Verificar e decodificar o token
+    const decoded = jwt.verify(token, jwtSecret);
+    const user_id = decoded.id;
+
+    const { tweet_id } = req.body || {};
+
+    if (!tweet_id) {
+      return res.status(400).json({ error: 'tweet_id é obrigatório' });
+    }
+
+    console.log('DEBUG: Curtindo tweet:', tweet_id, 'usuário:', user_id);
+
+    // Verificar se já curtiu
+    const { liked, error: checkError } = await checkUserLiked({ user_id, tweet_id });
+    
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('Erro ao verificar like:', checkError);
+      return res.status(500).json({ error: 'Erro ao verificar like' });
+    }
+
+    if (liked) {
+      return res.status(409).json({ error: 'Você já curtiu este tweet' });
+    }
+
+    // Adicionar like
+    const { data, error } = await insertLike({ user_id, tweet_id });
+
+    if (error) {
+      console.error('Erro ao curtir tweet:', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.log('DEBUG: Tweet curtido com sucesso');
+    return res.status(201).json({ like: data[0] });
+  } catch (error) {
+    console.error('ERRO CRÍTICO em likeTweet:', error);
+    console.error('Stack trace:', error.stack);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}
+
+async function handleUnlikeTweet(req, res) {
+  if (req.method !== 'DELETE') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  try {
+    // Verificar autenticação
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token de autenticação não fornecido' });
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      console.error('Erro: JWT_SECRET não definido nas variáveis de ambiente.');
+      return res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+
+    // Verificar e decodificar o token
+    const decoded = jwt.verify(token, jwtSecret);
+    const user_id = decoded.id;
+
+    const { tweet_id } = req.query || {};
+
+    if (!tweet_id) {
+      return res.status(400).json({ error: 'tweet_id é obrigatório' });
+    }
+
+    console.log('DEBUG: Descurtindo tweet:', tweet_id, 'usuário:', user_id);
+
+    // Remover like
+    const { error } = await deleteLike({ user_id, tweet_id });
+
+    if (error) {
+      console.error('Erro ao descurtir tweet:', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.log('DEBUG: Tweet descurtido com sucesso');
+    return res.status(200).json({ message: 'Like removido com sucesso' });
+  } catch (error) {
+    console.error('ERRO CRÍTICO em unlikeTweet:', error);
+    console.error('Stack trace:', error.stack);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}
+
+async function handleCheckLike(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  try {
+    // Verificar autenticação
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token de autenticação não fornecido' });
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      console.error('Erro: JWT_SECRET não definido nas variáveis de ambiente.');
+      return res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+
+    // Verificar e decodificar o token
+    const decoded = jwt.verify(token, jwtSecret);
+    const user_id = decoded.id;
+
+    const { tweet_id } = req.query || {};
+
+    if (!tweet_id) {
+      return res.status(400).json({ error: 'tweet_id é obrigatório' });
+    }
+
+    console.log('DEBUG: Verificando like para tweet:', tweet_id, 'usuário:', user_id);
+
+    // Verificar se curtiu
+    const { liked, error } = await checkUserLiked({ user_id, tweet_id });
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error('Erro ao verificar like:', error);
+      return res.status(500).json({ error: 'Erro ao verificar like' });
+    }
+
+    console.log('DEBUG: Like verificado com sucesso');
+    return res.status(200).json({ liked });
+  } catch (error) {
+    console.error('ERRO CRÍTICO em checkLike:', error);
     console.error('Stack trace:', error.stack);
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }

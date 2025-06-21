@@ -1,12 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, MoreHorizontal } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
+import { CommentForm } from '../components/CommentForm';
+import { CommentList } from '../components/CommentList';
+import { useLike } from '../hooks/useLike';
 import { toast } from 'sonner';
 
 interface Tweet {
+  id: number;
+  content: string;
+  created_at: string;
+  users: {
+    id: number;
+    name: string;
+    nickname: string;
+  };
+}
+
+interface Comment {
   id: number;
   content: string;
   created_at: string;
@@ -21,9 +35,18 @@ const TweetDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [tweet, setTweet] = useState<Tweet | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+
+  // Hook para gerenciar likes
+  const { likeCount, isLiked, isLoading: likeLoading, handleLike } = useLike({
+    tweetId: tweet?.id || 0,
+    initialLikeCount: 0,
+    isLoggedIn
+  });
 
   // Função para parsear datas corretamente
   const parseDate = (dateString: string) => {
@@ -76,6 +99,25 @@ const TweetDetail = () => {
     }
   };
 
+  // Carregar comentários
+  const loadComments = async () => {
+    try {
+      setIsLoadingComments(true);
+      const response = await fetch(`/api/getComments?tweet_id=${id}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setComments(data.comments);
+      } else {
+        console.error('Erro ao carregar comentários:', data.error);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar comentários:', error);
+    } finally {
+      setIsLoadingComments(false);
+    }
+  };
+
   // Verificar se há sessão salva no localStorage
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -98,12 +140,17 @@ const TweetDetail = () => {
     }
   }, []);
 
-  // Carregar tweet quando o componente montar
+  // Carregar tweet e comentários quando o componente montar
   useEffect(() => {
     if (id) {
       loadTweet();
+      loadComments();
     }
   }, [id]);
+
+  const handleCommentAdded = () => {
+    loadComments();
+  };
 
   if (isLoading) {
     return (
@@ -220,17 +267,20 @@ const TweetDetail = () => {
                   <div className="flex items-center gap-6">
                     <button className="flex items-center gap-2 text-slate-500 hover:text-blue-500 transition-colors">
                       <MessageCircle size={18} />
-                      <span className="text-sm">0</span>
+                      <span className="text-sm">{comments.length}</span>
                     </button>
                     
-                    <button className="flex items-center gap-2 text-slate-500 hover:text-green-500 transition-colors">
-                      <Share2 size={18} />
-                      <span className="text-sm">0</span>
-                    </button>
-                    
-                    <button className="flex items-center gap-2 text-slate-500 hover:text-red-500 transition-colors">
-                      <Heart size={18} />
-                      <span className="text-sm">0</span>
+                    <button 
+                      className={`flex items-center gap-2 transition-colors ${
+                        isLiked 
+                          ? 'text-red-500 hover:text-red-600' 
+                          : 'text-slate-500 hover:text-red-500'
+                      }`}
+                      onClick={handleLike}
+                      disabled={likeLoading}
+                    >
+                      <Heart size={18} className={isLiked ? 'fill-current' : ''} />
+                      <span className="text-sm">{likeCount}</span>
                     </button>
                   </div>
                   
@@ -245,12 +295,28 @@ const TweetDetail = () => {
 
         {/* Comments Section */}
         <div className="mt-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">Comentários</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+            Comentários ({comments.length})
+          </h3>
+          
           <Card className="border-0 shadow-sm bg-white/80 backdrop-blur-sm">
             <CardContent className="p-6">
-              <p className="text-slate-500 text-center py-8">
-                Comentários em breve...
-              </p>
+              {/* Comment Form */}
+              {isLoggedIn && currentUser && (
+                <CommentForm
+                  tweetId={tweet.id}
+                  currentUser={currentUser}
+                  onCommentAdded={handleCommentAdded}
+                />
+              )}
+              
+              {/* Comment List */}
+              <div className="mt-6">
+                <CommentList 
+                  comments={comments} 
+                  isLoading={isLoadingComments}
+                />
+              </div>
             </CardContent>
           </Card>
         </div>

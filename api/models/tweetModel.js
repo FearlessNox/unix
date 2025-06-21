@@ -10,7 +10,7 @@ export async function insertTweet({ content, user_id }) {
 export async function getAllTweets() {
   return await supabase
     .from('tweets')
-    .select('*, users(id, name, nickname)')
+    .select('*, users(id, name, nickname), comments(count), likes(count)')
     .order('created_at', { ascending: false });
 }
 
