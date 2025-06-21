@@ -1,5 +1,6 @@
 import { getAllTweets, insertTweet, getTweetById } from './models/tweetModel.js';
 import { findUserByEmail, insertUser, findUserByNicknameOrEmail } from './models/userModel.js';
+import { insertComment, getCommentsByTweet } from './models/commentModel.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
@@ -55,13 +56,19 @@ export default async function handler(req, res) {
         return await handleCreateTweet(req, res);
       case 'getTweets':
         return await handleGetTweets(req, res);
+
+      // Comment routes
+      case 'createComment':
+        return await handleCreateComment(req, res);
+      case 'getComments':
+        return await handleGetComments(req, res);
       
       default:
         console.log('DEBUG: Rota não encontrada:', path);
         return res.status(404).json({ 
           error: 'Rota não encontrada',
           path: path,
-          availableRoutes: ['test', 'createUser', 'login', 'getTweet', 'createTweet', 'getTweets']
+          availableRoutes: ['test', 'createUser', 'login', 'getTweet', 'createTweet', 'getTweets', 'createComment', 'getComments']
         });
     }
   } catch (error) {
@@ -301,6 +308,88 @@ async function handleGetTweets(req, res) {
     return res.status(200).json({ tweets: data });
   } catch (error) {
     console.error('ERRO CRÍTICO em getTweets:', error);
+    console.error('Stack trace:', error.stack);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}
+
+// Comment handlers
+async function handleCreateComment(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  try {
+    // Verificar autenticação
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token de autenticação não fornecido' });
+    }
+
+    const token = authHeader.substring(7);
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      console.error('Erro: JWT_SECRET não definido nas variáveis de ambiente.');
+      return res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+
+    // Verificar e decodificar o token
+    const decoded = jwt.verify(token, jwtSecret);
+    const user_id = decoded.id;
+
+    const { content, tweet_id } = req.body || {};
+
+    if (!content || !tweet_id) {
+      return res.status(400).json({ error: 'Conteúdo e tweet_id são obrigatórios' });
+    }
+
+    console.log('DEBUG: Criando comentário para tweet:', tweet_id, 'usuário:', user_id);
+
+    const { data, error } = await insertComment({ content, user_id, tweet_id });
+
+    if (error) {
+      console.error('Erro ao inserir comentário:', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.log('DEBUG: Comentário criado com sucesso');
+    return res.status(201).json({ comment: data[0] });
+  } catch (error) {
+    console.error('ERRO CRÍTICO em createComment:', error);
+    console.error('Stack trace:', error.stack);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}
+
+async function handleGetComments(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Método não permitido' });
+  }
+
+  try {
+    const { tweet_id } = req.query;
+    
+    if (!tweet_id) {
+      return res.status(400).json({ error: 'tweet_id é obrigatório' });
+    }
+
+    console.log('DEBUG: getComments function called for tweet:', tweet_id);
+    
+    const { data, error } = await getCommentsByTweet(tweet_id);
+    
+    console.log('DEBUG: Resposta do Supabase:', { data: data?.length, error });
+    
+    if (error) {
+      console.error('ERRO do Supabase:', error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    console.log('DEBUG: Comentários encontrados com sucesso');
+    return res.status(200).json({ comments: data });
+  } catch (error) {
+    console.error('ERRO CRÍTICO em getComments:', error);
     console.error('Stack trace:', error.stack);
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
