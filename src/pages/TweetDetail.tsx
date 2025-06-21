@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, MessageCircle, Share2, MoreHorizontal } from 'lucide-react';
+import { ArrowLeft, Heart, MessageCircle, MoreHorizontal } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { CommentForm } from '../components/CommentForm';
 import { CommentList } from '../components/CommentList';
+import { useLike } from '../hooks/useLike';
 import { toast } from 'sonner';
 
 interface Tweet {
@@ -39,6 +40,13 @@ const TweetDetail = () => {
   const [isLoadingComments, setIsLoadingComments] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+
+  // Hook para gerenciar likes
+  const { likeCount, isLiked, isLoading: likeLoading, handleLike } = useLike({
+    tweetId: tweet?.id || 0,
+    initialLikeCount: 0,
+    isLoggedIn
+  });
 
   // Função para parsear datas corretamente
   const parseDate = (dateString: string) => {
@@ -262,14 +270,17 @@ const TweetDetail = () => {
                       <span className="text-sm">{comments.length}</span>
                     </button>
                     
-                    <button className="flex items-center gap-2 text-slate-500 hover:text-green-500 transition-colors">
-                      <Share2 size={18} />
-                      <span className="text-sm">0</span>
-                    </button>
-                    
-                    <button className="flex items-center gap-2 text-slate-500 hover:text-red-500 transition-colors">
-                      <Heart size={18} />
-                      <span className="text-sm">0</span>
+                    <button 
+                      className={`flex items-center gap-2 transition-colors ${
+                        isLiked 
+                          ? 'text-red-500 hover:text-red-600' 
+                          : 'text-slate-500 hover:text-red-500'
+                      }`}
+                      onClick={handleLike}
+                      disabled={likeLoading}
+                    >
+                      <Heart size={18} className={isLiked ? 'fill-current' : ''} />
+                      <span className="text-sm">{likeCount}</span>
                     </button>
                   </div>
                   

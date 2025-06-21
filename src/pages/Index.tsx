@@ -47,7 +47,7 @@ const Index = () => {
           timestamp: parseDate(tweet.created_at),
           avatar: '👤',
           comments: tweet.comments?.[0]?.count ?? 0,
-          likes: 0 // Por enquanto, likes ainda não implementados
+          likes: tweet.likes?.[0]?.count ?? 0
         }));
         setPosts(formattedPosts);
       } else {
@@ -176,7 +176,7 @@ const Index = () => {
           />
         )}
         
-        <Feed posts={posts} isLoading={isLoadingPosts} />
+        <Feed posts={posts} isLoading={isLoadingPosts} isLoggedIn={isLoggedIn} />
       </main>
 
       {showLogin && (
