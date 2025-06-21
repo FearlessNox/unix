@@ -109,13 +109,20 @@ async function handleCreateUser(req, res) {
 
     // Inserir novo usuário
     const { data, error } = await insertUser({ name, nickname, email, password: hashedPassword });
+    
+    console.log('DEBUG: Resposta do insertUser:', { data, error });
+    
     if (error) {
       console.error('Erro ao inserir usuário:', error);
       return res.status(400).json({ error: 'Não foi possível criar a conta.' });
     }
 
     if (!data || !Array.isArray(data) || data.length === 0) {
-      return res.status(500).json({ error: 'Usuário criado, mas não foi possível retornar os dados.' });
+      console.log('DEBUG: Usuário criado mas sem retorno de dados');
+      return res.status(201).json({ 
+        message: 'Usuário criado com sucesso!',
+        user: { name, nickname, email }
+      });
     }
 
     console.log('DEBUG: Usuário criado com sucesso:', data[0].nickname);
