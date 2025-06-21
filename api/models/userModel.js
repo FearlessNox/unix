@@ -13,7 +13,7 @@ export async function getAllUsers() {
     .select('*');
 }
 
-export async function findUserByNicknameOrEmail({ nickname, email }: { nickname: string; email: string }) {
+export async function findUserByNicknameOrEmail({ nickname, email }) {
   return await supabase
     .from('users')
     .select('nickname, email')
@@ -21,7 +21,7 @@ export async function findUserByNicknameOrEmail({ nickname, email }: { nickname:
     .maybeSingle();
 }
 
-export async function findUserByEmail(email: string) {
+export async function findUserByEmail(email) {
   return await supabase
     .from('users')
     .select('*')
