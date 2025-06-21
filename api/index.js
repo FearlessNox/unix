@@ -114,7 +114,11 @@ async function handleCreateUser(req, res) {
       return res.status(400).json({ error: 'Não foi possível criar a conta.' });
     }
 
-    console.log('DEBUG: Usuário criado com sucesso:', nickname);
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return res.status(500).json({ error: 'Usuário criado, mas não foi possível retornar os dados.' });
+    }
+
+    console.log('DEBUG: Usuário criado com sucesso:', data[0].nickname);
     return res.status(201).json({ user: data[0] });
   } catch (error) {
     console.error('ERRO CRÍTICO em createUser:', error);
