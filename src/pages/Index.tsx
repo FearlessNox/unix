@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '../components/Header';
 import { PostCreator } from '../components/PostCreator';
 import { Feed } from '../components/Feed';
@@ -38,11 +37,34 @@ const Index = () => {
     }
   ]);
 
-  const handleLogin = (username, password) => {
-    // Simulação de login - em produção seria integrado com backend
+  // Verificar se há sessão salva no localStorage
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData');
+
+    if (token && userData) {
+      try {
+        const user = JSON.parse(userData);
+        setCurrentUser({
+          username: user.nickname,
+          displayName: user.name,
+          avatar: '👤'
+        });
+        setIsLoggedIn(true);
+      } catch (error) {
+        console.error('Erro ao restaurar sessão:', error);
+        // Limpar dados inválidos
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+      }
+    }
+  }, []);
+
+  const handleLogin = (data) => {
+    // data contém { user, token } da API
     const user = {
-      username: username,
-      displayName: username.charAt(0).toUpperCase() + username.slice(1),
+      username: data.user.nickname,
+      displayName: data.user.name,
       avatar: '👤'
     };
     setCurrentUser(user);
@@ -50,11 +72,11 @@ const Index = () => {
     setShowLogin(false);
   };
 
-  const handleRegister = (formData) => {
-    // Simulação de cadastro - em produção seria integrado com backend
+  const handleRegister = (data) => {
+    // data contém { user } da API
     const user = {
-      username: formData.username,
-      displayName: formData.name,
+      username: data.user.nickname,
+      displayName: data.user.name,
       avatar: '👤'
     };
     setCurrentUser(user);
@@ -65,6 +87,9 @@ const Index = () => {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentUser(null);
+    // Limpar dados do localStorage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
   };
 
   const handleCreatePost = (content) => {

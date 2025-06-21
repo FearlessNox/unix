@@ -1,32 +1,54 @@
-
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card } from './ui/card';
 import { X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LoginModalProps {
   onClose: () => void;
-  onLogin: (username: string, password: string) => void;
+  onLogin: (data: any) => void;
   onSwitchToRegister: () => void;
 }
 
 export const LoginModal = ({ onClose, onLogin, onSwitchToRegister }: LoginModalProps) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim() || !password.trim()) return;
+    if (!email.trim() || !password.trim()) return;
 
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      onLogin(username.trim(), password);
+
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Falha no login.');
+      }
+
+      // Salvar no localStorage
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userData', JSON.stringify(data.user));
+      
+      toast.success('Login realizado com sucesso!');
+      onLogin(data);
+      onClose();
+
+    } catch (error: any) {
+      toast.error(error.message || 'Ocorreu um erro.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -49,13 +71,13 @@ export const LoginModal = ({ onClose, onLogin, onSwitchToRegister }: LoginModalP
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="username">Nome de usuário</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Digite seu username"
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Digite seu email"
               className="mt-1"
               required
             />
@@ -77,7 +99,7 @@ export const LoginModal = ({ onClose, onLogin, onSwitchToRegister }: LoginModalP
           <Button
             type="submit"
             className="w-full bg-gradient-to-r from-blue-600 to-green-500 hover:from-blue-700 hover:to-green-600"
-            disabled={isLoading || !username.trim() || !password.trim()}
+            disabled={isLoading || !email.trim() || !password.trim()}
           >
             {isLoading ? 'Entrando...' : 'Entrar'}
           </Button>
